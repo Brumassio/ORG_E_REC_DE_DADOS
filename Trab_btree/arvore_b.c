@@ -7,6 +7,7 @@
 #define erro 404
 #define promocao 2
 #define sem_promocao 3
+#define DELIM_STR "|"
 
 
 typedef struct {
@@ -43,7 +44,7 @@ int busca_na_pagina(char chave,PAGINA PAG,int *POS){
 void le_pagina(int rrn,PAGINA *pag){
     FILE *arq;   
     fopen(arq,"w");
-    int byteoffset = rrn*ordem+sizeof(PAGINA); // ta certo ???
+    int byteoffset = rrn*sizeof(PAGINA); // ta certo ???
     fseek(arq,byteoffset,SEEK_SET);
     fread(pag,sizeof(PAGINA),1,arq);
 }
@@ -51,7 +52,7 @@ void le_pagina(int rrn,PAGINA *pag){
 void escreve_pagina(int rrn, PAGINA pag){
     FILE *arq;   
     fopen(arq,"w");
-    int byteoffset = rrn*ordem+sizeof(PAGINA); // ta certo ???
+    int byteoffset = rrn*sizeof(PAGINA); // ta certo ???
     fseek(arq,byteoffset,SEEK_SET);
     fwrite(&pag,sizeof(PAGINA),1,arq);
 }
@@ -106,7 +107,7 @@ void divide(int chave,int filho_d,PAGINA *pag, int *chave_pro,int *filho_d_pro,P
 }
 
 int busca (int rrn,char chave,int  *rrn_encontrado,int *pos_encontrada){
-    if(rrn == NULL){
+    if(rrn < 0){
         return nao_encontrado;
     }
     PAGINA pag;
@@ -175,11 +176,33 @@ int insere(int rrn_atual,char chave,int  *filho_d_pro,int *chave_pro){
     }
 }
 
+/*void gerenciador(){
+    FILE *arq;
+    if(arq != NULL){
+        fopen(arq,"w+");
+        int raiz;
+        fread(raiz,sizeof(int),1,arq); // ??
+    }
+    else{
+
+    }
+}*/
+void criar_arvB(char *arq){
+    FILE *entrada=fopen(arq,"r+");
+    int num_lido = 0;
+    int i =0;
+    while(fscanf(entrada,"%d|",&num_lido)!= -1){
+        printf("lido: %d\n",num_lido);
+    }
+    fclose(entrada);
+}
+
 int main(int argc, char *argv[]) {
 
     if (argc == 3 && strcmp(argv[1], "-c") == 0) {
 
         printf("Modo de criação da árvore-B ... nome do arquivo = %s\n", argv[2]);
+        criar_arvB(argv[2]);
    
 
     } else if (argc == 3 && strcmp(argv[1], "-k") == 0) {
