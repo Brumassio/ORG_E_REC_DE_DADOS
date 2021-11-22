@@ -64,15 +64,15 @@ void escreve_pagina(int rrn, PAGINA pag){
 void inicializa_pagina(PAGINA *pag){
     pag->contachaves = 0;
     for(int i=0;i<=ordem-1;i++){
-        pag->chave[i] = 0;
+        pag->chave[i] = -1;
         pag->filho[i] = -1;//NULL;
     }
-    pag->filho[ordem-1] =  -1;//NULL;
+    pag->filho[ordem] =  -1;//NULL;
 }
 
 void insere_na_pagina (int chave, int filho_d,PAGINA *pag){
     int i = pag->contachaves;
-    while(i>0 && chave<pag->chave[i-1]){
+    while(i > 0 && chave < pag->chave[i-1]){
         pag->chave[i] = pag->chave[i-1];
         pag->filho[i+1] = pag->filho[i];
         i--;
@@ -150,53 +150,34 @@ int insere(int rrn_atual,char chave,int  *filho_d_pro,int *chave_pro){
         printf("\nalo");
         *chave_pro = chave;
         *filho_d_pro = -1/* NULL */;
-        printf("\n to no return promocao");
+       // printf("\n to no return promocao");
         return promocao; 
     }
     else{
-       // printf("\n result recebendo busca na pag");
         le_pagina(rrn_atual,&pag);//leia a página armazenada em RRN_ATUAL para PAG -> fazer função
-        //printf("\n result recebendo busca na pag2");
         result = busca_na_pagina(chave, pag,&pos);
-        //printf("\n result recebendo busca na pag3");
     }
     if(result == encontrado){
         printf("\nChave duplicada");
         return erro;
     }
-    printf("\n opa result n eh encontrado, RRN_atual = %d", rrn_atual);
-    int rrn_pro=0,chv_pro=0; //n sei ta certo isso !!!
+    int rrn_pro,chv_pro; //n sei ta certo isso !!!
     int retorno = insere(pag.filho[pos],chave,&rrn_pro,&chv_pro); // ERRO TA AQUI ! :( ??
-    printf("\noi retorno 2");
-    if(rrn_atual == -1/* NULL */){
-        printf("\nrrn_atual = -1");
-        *chave_pro = chave;
-        *filho_d_pro = -1/* NULL */;
-        return promocao;
-    }
-    else{
-        printf("\nresult recebendo denovo");
-        le_pagina(rrn_atual,&pag);//leia a página armazenada em RRN_ATUAL para PAG -> função que lê
-        result = busca_na_pagina(chave,pag,&pos);
-    }
-    if(result == encontrado){
-        printf("\nchave duplicada!");
-        return erro;
-    }
-    retorno = insere(pag.filho[pos],chave,&rrn_pro,&chv_pro);
+    //printf("\noi retorno 2");
+    //retorno = insere(pag.filho[pos],chave,&rrn_pro,&chv_pro);
     if(retorno == sem_promocao || retorno == erro){
         printf("\nreturn retorno");
         return retorno;
     }
     else{//houve promoção da inserção
         if(pag.contachaves < ordem){
-            printf("\nhouve promoção da inserção / pag.cont <ordem");
+            //printf("\nhouve promoção da inserção / pag.cont <ordem");
             insere_na_pagina(chv_pro,rrn_pro,&pag);//insira CHV_PRO e RRN_PRO (chave promovida e filha) em PAG
             escreve_pagina(rrn_atual,pag);//escreva PAG no arquivo em RRN_ATUAL
             return sem_promocao;
         }
         else{
-            printf("\nhouve promoção da inserção / pag.cont > ordem");
+            //printf("\nhouve promoção da inserção / pag.cont > ordem");
             divide(chv_pro,rrn_pro,&pag,chave_pro,filho_d_pro,&novapag);
             escreve_pagina(rrn_atual,pag);//escreva PAG no arquivo em RRN_ATUAL
             escreve_pagina(filho_d_pro,novapag);//escreva NOVAPAG no arquivo em FILHO_D_PRO
@@ -221,42 +202,11 @@ int insere(int rrn_atual,char chave,int  *filho_d_pro,int *chave_pro){
 
 } */
 
-int pega_input(char *arq){
-    FILE *txt;
-    txt = fopen(arq,"r+");
+int pega_input(char *arq,FILE *txt){
     int input;
-/*     char inputs[7];
-    int convertido;
-    //Btree = fopen(arq,"r+");
-    //memset(inputs,-1,sizeof(char));
-    printf("\n oie input");
-    //fseek(arq,0,SEEK_SET);
-    char c = fgetc(txt);
-    int i =0;
-    if(c != DELIM_STR[0]){
-        inputs[i] = c;
-        //i++;
-        printf("\noi amiguin1");
-    }
-    while(c != EOF && c!= DELIM_STR[0]){
-        c = fgetc(txt);
-        inputs[i] = c;
-        printf("\noi amiguin2");
-        //i++;
-    }
-    if(c = EOF){
-        printf("\noi amiguin3");
-        convertido = -1;
-        return convertido;
-    }
-    printf("\nvalor do inputzada: %s",inputs);
-    convertido=atoi(inputs);
-    printf("\nvalor do inputzada: %d",convertido); */
-   /*  while(fscanf(txt,"%d|",&convertido)!= EOF){
-        printf("\nvalor da chave = %d",convertido);
-    } */
-    
+
     if(fscanf(txt,"%d|",&input) != EOF){
+       //printf("\n%d",input); 
        return input;
     }
     return -1;
@@ -265,27 +215,31 @@ int pega_input(char *arq){
 
 void gerenciador(FILE *Btree,char *arq){
     //FILE  *Btree = fopen("Btree.dat","r+");
-    printf("\noi");
+    FILE *txt = fopen(arq,"r+");
+    //printf("\noi");
     PAGINA novapag;
     int raiz,aux,filho_d_pro,chave_pro,rrn,c=0,chave;
     
-    if(Btree != NULL){
+/*     if(Btree != NULL){
         //FILE *Btree = fopen("Btree.dat","r+");
         fread(&raiz,sizeof(int),1,Btree); // ??
         printf("\noi2");
 
-    }
-    else{
+    } */
+    //else{
     //FILE  *Btree = fopen("Btree.dat","w");
     raiz = 0;
+    printf("\n??");
     inicializa_pagina(&novapag);
     escreve_pagina(raiz,novapag);
+    fwrite(&raiz,sizeof(int),1,Btree);
+    fwrite(&novapag,sizeof(PAGINA),1,Btree);
     printf("\noi3");
-    }
+    //}
     fseek(Btree,0,SEEK_SET);
     //chave = pega_input(Btree,arq);
-    while((chave = pega_input(arq)) != -1 ){
-        printf("\n to no while");
+    while((chave = pega_input(arq,txt)) != -1){
+        printf("\n valor da chave = %d",chave);
         if(insere(raiz,chave,&filho_d_pro,&chave_pro) == promocao){
             printf("\ndentro do ifzada");
             inicializa_pagina(&novapag);
@@ -308,74 +262,22 @@ void gerenciador(FILE *Btree,char *arq){
 
 void criar_arvB(char *arq){
     FILE *Btree;
+    FILE *txt = fopen(arq,"r+");
     PAGINA novapag;
-    int raiz = 0;
+    int chave,raiz = 0;
     Btree = fopen("Btree.dat","w+");
-    inicializa_pagina(&novapag);
-    escreve_pagina(raiz,novapag);
+    //inicializa_pagina(&novapag);
+    //escreve_pagina(raiz,novapag);
     //int inputs = pega_input(arq);
     //printf("\noie pos inputs");
     gerenciador(Btree,arq);
     printf("\nhello valentas");
     fclose(Btree);
 }
-void imprimirVet(int *v, int n){
-    printf("\n");
-    for(int i=0; i<n; i++){
-        printf(" [%d] ", v[i]);
-    }
-    printf("\n");
-}
 
-int particiona(int *v, int inicio, int final){
-    int esq, dir, pivo, aux;
-    esq = inicio;
-    dir = final;
-    pivo = v[inicio];
-    while(esq < dir){
-        while(v[esq] <= pivo)
-            esq++;
-        while(v[dir] > pivo)
-            dir--;
-        if(esq < dir){
-            aux = v[esq];
-            v[esq] = v[dir];
-            v[dir] = aux;
-        }
-    }
-    v[inicio] = v[dir];
-    v[dir] = pivo;
-    return dir;
-}
+/* void chaves_em_ordem_crescente(char *arq){
 
-
-void quickSort(int *v, int inicio, int fim){
-    int pivo;
-    //printf("| i %d | f %d \n", inicio, fim);
-
-    if(fim > inicio){
-        pivo = particiona(v, inicio, fim);
-        imprimirVet(v, 7);
-        quickSort(v, inicio, pivo-1);
-        quickSort(v, pivo+1, fim);
-    }
-    else return;
-}
-
-void chaves_em_ordem_crescente(char *arq){
-    int chave,i=0,j=0;
-    while(pega_input(arq) != EOF){
-        i++;
-    }
-    int vetor[i];
-    while((chave=pega_input(arq) != EOF)){
-        vetor[j] = chave;
-        j++;
-    }
-    quickSort(&vetor,vetor[0],vetor[i]);
-    imprimirVet(vetor,i);
-
-}
+} */
 
 int main(int argc, char *argv[]) {
 
@@ -384,7 +286,6 @@ int main(int argc, char *argv[]) {
         printf("Modo de criação da árvore-B ... nome do arquivo = %s\n", argv[2]);
         criar_arvB(argv[2]);
         //gerenciador();
-        //pega_input(argv[2]);
    
 
     } else if (argc == 3 && strcmp(argv[1], "-p") == 0) {
@@ -395,7 +296,7 @@ int main(int argc, char *argv[]) {
     } else if (argc == 3 && strcmp(argv[1], "-k") == 0) {
 
         printf("impressão das chaves em ordem crescente (percurso na árvore-B) ...\n");
-        chaves_em_ordem_crescente(argv[2]);
+        //chaves_em_ordem_crescente(argv[2]);
     } else {
 
         fprintf(stderr, "Argumentos incorretos!\n");
