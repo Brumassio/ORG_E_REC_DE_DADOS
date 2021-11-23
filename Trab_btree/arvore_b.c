@@ -236,7 +236,7 @@ void gerenciador(FILE *Btree,char *arq){
     fwrite(&novapag,sizeof(PAGINA),1,Btree);
     printf("\noi3");
     //}
-    fseek(Btree,0,SEEK_SET);
+    //fseek(Btree,0,SEEK_SET);
     //chave = pega_input(Btree,arq);
     while((chave = pega_input(arq,txt)) != -1){
         printf("\n valor da chave = %d",chave);
@@ -265,7 +265,7 @@ void criar_arvB(char *arq){
     FILE *txt = fopen(arq,"r+");
     PAGINA novapag;
     int chave,raiz = 0;
-    Btree = fopen("Btree.dat","w+");
+    Btree = fopen("Btree.dat","w+b");
     //inicializa_pagina(&novapag);
     //escreve_pagina(raiz,novapag);
     //int inputs = pega_input(arq);
