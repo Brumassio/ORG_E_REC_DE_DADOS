@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <windows.h>
+
 #define ordem 5
 #define encontrado 1
 #define nao_encontrado 0
@@ -13,7 +15,7 @@
 
 typedef struct {
 int contachaves; /* número de chaves na página */
-int chave[ordem-1]; /* vetor que armazena as chaves */
+int chave[ordem-1]; /* vetor que armazena as chaves */  
 int filho[ordem]; /* rrns dos filhos */
 } PAGINA;
 
@@ -26,6 +28,8 @@ int RRN_novapag(){
     int byteoffset = ftell(arq);
     //fread(&byteoffset,sizeof(int),1,arq); //faça BYTEOFFSET receber o byte-offset do fim do arquivo -> socorro ??
     fclose(arq);
+
+    printf("NOVO RRRN %d",(byteoffset - tamanhocab)/tamanhopag);
     return (byteoffset - tamanhocab)/tamanhopag;
 }
 
@@ -67,7 +71,7 @@ void inicializa_pagina(PAGINA *pag){
         pag->chave[i] = 0;
         pag->filho[i] = -1;//NULL;
     }
-    pag->filho[ordem] =  -1;//NULL
+    pag->filho[ordem-1] =  -1;//NULL
 }
 
 void insere_na_pagina (int chave, int filho_d,PAGINA *pag){
@@ -88,47 +92,80 @@ PAGINA copiar_pag(PAGINA *pag){
     for(int i=0;i<ordem-1;i++){
         pagaux.chave[i] = pag->chave[i];
         pagaux.filho[i] = pag->filho[i];
+        printf("filho-> %d", pagaux.filho[i]);
     }
-    pagaux.filho[ordem] = pag->filho[ordem];
+    pagaux.filho[ordem-1] = pag->filho[ordem-1];
+    printf("filho-> %d", pagaux.filho[ordem-1]);
     return pagaux;
 }
 
 void divide(int chave,int filho_d,PAGINA *pag, int *chave_pro,int *filho_d_pro,PAGINA *novapag){
     PAGINA pagaux;
-    pagaux = copiar_pag(pag);//copie PAG para PAGAUX  
+    pagaux = copiar_pag(pag);//copie PAG para PAGAUX 
+    int vet[ordem],vet1[ordem+1]; 
     /* Insira CHAVE e FILHO_D nos lugares apropriados em PAGAUX */
     printf("\nola, estou dentro da desgraça do divide");
     int i = ordem-1;
+    printf("\nchave dentro do divide: %d\n",chave);
+
+    for(int i=0;i<ordem-1;i++){
+        vet[i] = pag->chave[i];
+        vet1[i] = pag->filho[i];
+    }
+    vet1[ordem-1] = pag->filho[ordem-1];
+    //vet1[ordem] = pag->filho[ordem];
     while(chave < pagaux.chave[i-1] && i>0){
-        pagaux.chave[i] = pagaux.chave[i-1];
-        pagaux.filho[i+1] = pagaux.filho[i];
+        vet[i] = vet[i-1];
+        //printf("\npagaux[%d] = %d",i,pagaux.chave[i]);
+        vet1[i+1] = vet1[i];
+        //printf("\npagaux[%d] = %d",i,pagaux.filho[i]);
         i--;
     }
-    pagaux.chave[i] = chave;
-    pagaux.filho[i+1] = filho_d;
+    
+
+    vet[i] = chave;
+    
+    // pagaux.filho[i] = -1;
+    vet1[i+1] = filho_d;
+    
+    // printf("filho %d", filho_d);
+    
+
     int meio = (ordem)/2;
     int rrn;
     *filho_d_pro = RRN_novapag(); //faça FILHO_D_PRO receber o RRN que a NOVAPAG terá no arquivo árvore-b 
-    *chave_pro = pagaux.chave[meio];
+    *chave_pro = vet[meio];
     /* Copie as chaves e ponteiros que vêm depois de CHAVE_PRO para NOVAPAG */
     i = 0;
     inicializa_pagina(pag);
     while(i<meio){
-        pag->chave[i]= pagaux.chave[i];
-        pag->filho[i]= pagaux.filho[i];
+        pag->chave[i]= vet[i];
+        pag->filho[i]= vet1[i];
         pag->contachaves++;
         i++;
     }
-    pag->filho[i] = pagaux.filho[i];
+    printf("\npag[%d] = %d",i,pag->chave[i]);
+    printf("\npag[%d] = %d",i,pag->filho[i]);
+
+    pag->filho[i] = vet1[i];
     inicializa_pagina(novapag);
     i = meio+1;
-    while(i<ordem){
-        novapag->chave[novapag->contachaves]= pagaux.chave[i];
-        novapag->filho[novapag->contachaves] = pagaux.filho[i];
+
+    
+    while(i<ordem+1){
+        novapag->chave[novapag->contachaves]= vet[i];
+        novapag->filho[novapag->contachaves] = vet1[i];
         novapag->contachaves++;
         i++;
     }
-    novapag->filho[novapag->contachaves] = pagaux.filho[i];
+
+    for(int j=0; j<ordem; j++){
+        printf("\nCURIThaN %d", novapag->filho[j]);
+    }
+
+    printf("\nnovapagchave[%d] = %d",novapag->contachaves,novapag->chave[novapag->contachaves]);
+    printf("\nnovapagfilho[%d] = %d",novapag->contachaves,novapag->filho[novapag->contachaves]);
+    novapag->filho[novapag->contachaves] = vet1[i];
 }
 
 int busca (int rrn,int chave,int  *rrn_encontrado,int *pos_encontrada){
@@ -163,15 +200,22 @@ int insere(int rrn_atual,char chave,int  *filho_d_pro,int *chave_pro){
         return promocao; 
     }
     else{
+        
         le_pagina(rrn_atual,&pag);//leia a página armazenada em RRN_ATUAL para PAG -> fazer função
+        
+        // system("pause");
         result = busca_na_pagina(chave, pag,&pos);
     }
     if(result == encontrado){
         printf("\nChave duplicada");
         return erro;
     }
-    int rrn_pro,chv_pro; //n sei ta certo isso !!!
+    int rrn_pro=0,chv_pro=0; //n sei ta certo isso !!!
+    // printf("\nRRN DO FILHO %d", pag.filho[pos]);
+    // system("pause");
+    
     int retorno = insere(pag.filho[pos],chave,&rrn_pro,&chv_pro); // ERRO TA AQUI ! :( ??
+    
     //printf("\noi retorno 2");
     //retorno = insere(pag.filho[pos],chave,&rrn_pro,&chv_pro);
     if(retorno == sem_promocao || retorno == erro){
@@ -182,16 +226,22 @@ int insere(int rrn_atual,char chave,int  *filho_d_pro,int *chave_pro){
     else{//houve promoção da inserção
         if(pag.contachaves < ordem-1){
             //printf("\n nao houve promoção na insercao / pag.cont <ordem");
-            printf("\nrrn_atual = %d, chave_pro= %d, chave = %d,conta chaves = %d, rrn_pro= %d",rrn_atual,*chave_pro,chave,pag.contachaves, rrn_pro );
+            //printf("\nrrn_atual = %d, chave_pro= %d, chave = %d,conta chaves = %d, rrn_pro= %d",rrn_atual,*chave_pro,chave,pag.contachaves, rrn_pro );
             insere_na_pagina(chv_pro,rrn_pro,&pag);//insira CHV_PRO e RRN_PRO (chave promovida e filha) em PAG
-            //printf("\nConta Chaves pos insere na pag = %d",pag.contachaves);
+            printf("\nConta Chaves pos insere na pag = %d",pag.contachaves);
             escreve_pagina(rrn_atual,pag);//escreva PAG no arquivo em RRN_ATUAL
             return sem_promocao;
         }
         else{
             //printf("\nhouve promoção da inserção / pag.cont > ordem");
             printf("\n vai entrar no divide, com contachaves valendo %d!", pag.contachaves);
+            // printf("\n\nrrnpro %d  ", chv_pro);
+            
+            for(int j=0; j<ordem; j++){
+                printf("%d\n",pag.filho[j]);
+            }
             divide(chv_pro,rrn_pro,&pag,chave_pro,filho_d_pro,&novapag);
+            printf("\nrrn_atual: %d",rrn_atual);
             escreve_pagina(rrn_atual,pag);//escreva PAG no arquivo em RRN_ATUAL
             escreve_pagina(*filho_d_pro,novapag);//escreva NOVAPAG no arquivo em FILHO_D_PRO
             return promocao;
@@ -221,8 +271,7 @@ int pega_input(FILE *txt){
     if(fscanf(txt,"%d|",&input) != EOF){
        return input;
     }
-    return -1;
-    //return convertido;
+    return -1; // Fim do Arquivo !!!
 }
 
 void imprimir_pag(FILE *Btree,int rrn){
@@ -241,46 +290,65 @@ void imprimir_pag(FILE *Btree,int rrn){
     }
 }
 
+void imprime_informacao(){
+    int i =0;
+    int rrns;
+    FILE *Btree = fopen("Btree.dat","r");
+    if(Btree == NULL){
+        printf("\nO arquivo Btree.dat nao existe !!!");
+        exit(EXIT_FAILURE);
+    }
+    rrns = RRN_novapag();
+    while(i<rrns){
+        imprimir_pag(Btree,i);
+        i++;
+    }
+    //while(imprimir_pag)
+} 
+
 void gerenciador(FILE *Btree,char *arq){
     FILE *txt = fopen(arq,"r+b");
     PAGINA novapag;
-    int raiz,filho_d_pro,chave_pro,rrn,c=0,chave;
+    int raiz,filho_d_pro=0,chave_pro=0,rrn,c=0,chave;
     raiz = 0;
-    printf("\n??");
+    //printf("\n??");
     imprimir_pag(Btree,0);
     inicializa_pagina(&novapag);
+
     escreve_pagina(raiz,novapag);
     imprimir_pag(Btree,0);
     fwrite(&raiz,sizeof(int),1,Btree);
     //fwrite(&novapag,sizeof(PAGINA),1,Btree);
     printf("\noi3");
 
-    while((chave = pega_input(txt)) != -1){
+    chave = pega_input(txt);
+    while(chave != -1){
         printf("\n valor da chave = %d",chave);
         if(insere(raiz,chave,&filho_d_pro,&chave_pro) == promocao){
 
             printf("\ndentro do ifzada");
             inicializa_pagina(&novapag);
-            novapag.chave[0] = chave_pro;  //filho esquerdo  
+            
+            novapag.chave[0] = chave_pro;  //filho esquerdo
+            printf("\nnovapag.chave[0] = %d",novapag.chave[0]);  
             novapag.filho[0] = raiz;
+            printf("\nnovapag.filho[0] = %d",novapag.filho[0]);  
             novapag.filho[1] = filho_d_pro; //filho direito 
-            escreve_pagina(raiz,novapag);
+            printf("\nnovapag.filho[1] = %d",novapag.filho[1]);  
+            
             rrn = RRN_novapag();
-            raiz = rrn; //faça RAIZ receber o RRN de NOVAPAG??
+            raiz = rrn; //faça RAIZ receber o RRN de NOVAPAG
+            escreve_pagina(raiz,novapag);
             printf("\noi5");
         }
-        imprimir_pag(Btree,c);
+        imprimir_pag(Btree,raiz);
         printf("\noi6");
-        fseek(Btree,sizeof(int),SEEK_CUR);
-        fread(&chave,sizeof(int),1,Btree);
+        // fseek(Btree,sizeof(int),SEEK_CUR);
+        // fread(&chave,sizeof(int),1,Btree);
+        chave = pega_input(txt);
     }
     fwrite(&raiz,sizeof(int),1,Btree);
     printf("\nend gerencia");
-    imprimir_pag(Btree,c);
-    c++;
-    imprimir_pag(Btree,c);
-    c++;
-    imprimir_pag(Btree,c);
     fclose(Btree);
     fclose(txt);
 }  
@@ -309,9 +377,11 @@ int main(int argc, char *argv[]) {
         //gerenciador();
    
 
-    } else if (argc == 3 && strcmp(argv[1], "-p") == 0) {
+    } else if (argc == 2 && strcmp(argv[1], "-p") == 0) {
 
-        printf("Impressão das informações da árvore-B ... nome do arquivo = %s\n", argv[2]);
+        printf("Impressão das informações da árvore-B ...\n");
+        imprime_informacao();
+        
         
 
     } else if (argc == 3 && strcmp(argv[1], "-k") == 0) {
