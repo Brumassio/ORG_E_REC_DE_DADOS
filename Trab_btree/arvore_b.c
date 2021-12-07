@@ -29,7 +29,7 @@ int RRN_novapag(){
     //fread(&byteoffset,sizeof(int),1,arq); //faça BYTEOFFSET receber o byte-offset do fim do arquivo -> socorro ??
     fclose(arq);
 
-    printf("NOVO RRRN %d",(byteoffset - tamanhocab)/tamanhopag);
+    printf("NOVO RRN = %d",(byteoffset - tamanhocab)/tamanhopag);
     return (byteoffset - tamanhocab)/tamanhopag;
 }
 
@@ -57,6 +57,7 @@ void le_pagina(int rrn,PAGINA *pag){
 }
 
 void escreve_pagina(int rrn, PAGINA pag){
+    printf("\nCONTA CHAVES ESCREVE o bendito numero %d", pag.chave[1]);
     FILE *arq;   
     arq = fopen("Btree.dat","r+b");
     int byteoffset = sizeof(int)+(rrn*sizeof(PAGINA)); // ta certo ???
@@ -81,7 +82,9 @@ void insere_na_pagina (int chave, int filho_d,PAGINA *pag){
         pag->filho[i+1] = pag->filho[i];
         i--;
     }
+    printf("\nAntes ++%d",pag->contachaves);
     pag->contachaves++;
+    
     pag->chave[i] = chave;
     pag->filho[i+1] = filho_d;
 }
@@ -113,6 +116,10 @@ void divide(int chave,int filho_d,PAGINA *pag, int *chave_pro,int *filho_d_pro,P
         vet1[i] = pag->filho[i];
     }
     vet1[ordem-1] = pag->filho[ordem-1];
+    for(int i=0; i<ordem-1;i++){
+        printf("\nvet[%d] = %d", i, vet[i]);
+    }
+
     //vet1[ordem] = pag->filho[ordem];
     while(chave < pagaux.chave[i-1] && i>0){
         vet[i] = vet[i-1];
@@ -121,8 +128,11 @@ void divide(int chave,int filho_d,PAGINA *pag, int *chave_pro,int *filho_d_pro,P
         //printf("\npagaux[%d] = %d",i,pagaux.filho[i]);
         i--;
     }
+
+    
     
 
+   
     vet[i] = chave;
     
     // pagaux.filho[i] = -1;
@@ -140,32 +150,45 @@ void divide(int chave,int filho_d,PAGINA *pag, int *chave_pro,int *filho_d_pro,P
     inicializa_pagina(pag);
     while(i<meio){
         pag->chave[i]= vet[i];
+        printf("\npag->chave: %d",pag->chave[i]);
         pag->filho[i]= vet1[i];
         pag->contachaves++;
         i++;
     }
-    printf("\npag[%d] = %d",i,pag->chave[i]);
-    printf("\npag[%d] = %d",i,pag->filho[i]);
+    printf("\nCONTA CHAVES DESSA POHA %d", pag->contachaves);
+    
+
+    // printf("\npag[%d] = %d",i,pag->chave[i]);
+    // printf("\npag[%d] = %d",i,pag->filho[i]);
 
     pag->filho[i] = vet1[i];
     inicializa_pagina(novapag);
     i = meio+1;
 
-    
-    while(i<ordem+1){
+    //printf("CONTA CHAVES DESSA OUTRA  POHA %d ANTES\n", novapag->contachaves);
+    while(i<ordem){
         novapag->chave[novapag->contachaves]= vet[i];
+        //printf("\nnovapag->chave: %d",novapag->chave[i]);
         novapag->filho[novapag->contachaves] = vet1[i];
         novapag->contachaves++;
         i++;
     }
+    novapag->filho[novapag->contachaves] = vet1[ordem];
 
-    for(int j=0; j<ordem; j++){
-        printf("\nCURIThaN %d", novapag->filho[j]);
+    for(int j=0; j<novapag->contachaves;j++){
+        printf("\nnovapag[%d] = %d", j, novapag->chave[j]);
     }
 
-    printf("\nnovapagchave[%d] = %d",novapag->contachaves,novapag->chave[novapag->contachaves]);
-    printf("\nnovapagfilho[%d] = %d",novapag->contachaves,novapag->filho[novapag->contachaves]);
-    novapag->filho[novapag->contachaves] = vet1[i];
+    //printf("CONTA CHAVES DESSA OUTRA  POHA %d", novapag->contachaves);
+
+  /*   for(int j=0; j<ordem; j++){
+        printf("\nCURIThaN %d", novapag->filho[j]);
+    } */
+
+    //printf("\nnovapagchave[%d] = %d",novapag->contachaves,novapag->chave[novapag->contachaves]);
+    //printf("\nnovapagfilho[%d] = %d",novapag->contachaves,novapag->filho[novapag->contachaves]);
+    
+    // novapag->filho[novapag->contachaves] = vet1[i];
 }
 
 int busca (int rrn,int chave,int  *rrn_encontrado,int *pos_encontrada){
@@ -227,6 +250,8 @@ int insere(int rrn_atual,char chave,int  *filho_d_pro,int *chave_pro){
         if(pag.contachaves < ordem-1){
             //printf("\n nao houve promoção na insercao / pag.cont <ordem");
             //printf("\nrrn_atual = %d, chave_pro= %d, chave = %d,conta chaves = %d, rrn_pro= %d",rrn_atual,*chave_pro,chave,pag.contachaves, rrn_pro );
+            
+
             insere_na_pagina(chv_pro,rrn_pro,&pag);//insira CHV_PRO e RRN_PRO (chave promovida e filha) em PAG
             printf("\nConta Chaves pos insere na pag = %d",pag.contachaves);
             escreve_pagina(rrn_atual,pag);//escreva PAG no arquivo em RRN_ATUAL
@@ -234,14 +259,14 @@ int insere(int rrn_atual,char chave,int  *filho_d_pro,int *chave_pro){
         }
         else{
             //printf("\nhouve promoção da inserção / pag.cont > ordem");
-            printf("\n vai entrar no divide, com contachaves valendo %d!", pag.contachaves);
+            //printf("\n vai entrar no divide, com contachaves valendo %d!", pag.contachaves);
             // printf("\n\nrrnpro %d  ", chv_pro);
             
             for(int j=0; j<ordem; j++){
                 printf("%d\n",pag.filho[j]);
             }
             divide(chv_pro,rrn_pro,&pag,chave_pro,filho_d_pro,&novapag);
-            printf("\nrrn_atual: %d",rrn_atual);
+            //printf("\nrrn_atual: %d",rrn_atual);
             escreve_pagina(rrn_atual,pag);//escreva PAG no arquivo em RRN_ATUAL
             escreve_pagina(*filho_d_pro,novapag);//escreva NOVAPAG no arquivo em FILHO_D_PRO
             return promocao;
@@ -276,10 +301,11 @@ int pega_input(FILE *txt){
 
 void imprimir_pag(FILE *Btree,int rrn){
     PAGINA pag;
+    int raiz;
     int byteoffset = sizeof(int)+(rrn*sizeof(PAGINA));
     fseek(Btree,byteoffset,SEEK_SET);
     fread(&pag,sizeof(PAGINA),1,Btree);
-    printf("\nPagina : %d",rrn);
+    printf("\n\nPagina : %d",rrn);
     printf("\nChaves: ");
     for(int i=0;i<ordem-1;i++){
         printf("%d |",pag.chave[i]);
@@ -292,19 +318,35 @@ void imprimir_pag(FILE *Btree,int rrn){
 
 void imprime_informacao(){
     int i =0;
-    int rrns;
+    int rrns,raiz;
     FILE *Btree = fopen("Btree.dat","r");
     if(Btree == NULL){
         printf("\nO arquivo Btree.dat nao existe !!!");
         exit(EXIT_FAILURE);
     }
     rrns = RRN_novapag();
+    fseek(Btree,0,SEEK_SET);
+    fread(&raiz,sizeof(int),1,Btree);
     while(i<rrns){
-        imprimir_pag(Btree,i);
-        i++;
+        if(i != raiz){
+            imprimir_pag(Btree,i);
+            i++;
+        }
+        else{
+            printf("\n\n\n- - - - Pagina Raiz - - - -");
+            imprimir_pag(Btree,i);
+            printf("\n- - - - - - - - - - - - - -");
+            i++;
+        }
     }
+    fclose(Btree);
     //while(imprimir_pag)
-} 
+}
+
+void atualiza_cabecalho(int raiz,FILE *Btree){
+    fseek(Btree,0,SEEK_SET);
+    fwrite(&raiz,sizeof(int),1,Btree);
+}
 
 void gerenciador(FILE *Btree,char *arq){
     FILE *txt = fopen(arq,"r+b");
@@ -319,53 +361,96 @@ void gerenciador(FILE *Btree,char *arq){
     imprimir_pag(Btree,0);
     fwrite(&raiz,sizeof(int),1,Btree);
     //fwrite(&novapag,sizeof(PAGINA),1,Btree);
-    printf("\noi3");
+    //printf("\noi3");
 
     chave = pega_input(txt);
     while(chave != -1){
-        printf("\n valor da chave = %d",chave);
+        printf("\n valor da chave a ser inserida = %d",chave);
+
         if(insere(raiz,chave,&filho_d_pro,&chave_pro) == promocao){
 
             printf("\ndentro do ifzada");
             inicializa_pagina(&novapag);
             
             novapag.chave[0] = chave_pro;  //filho esquerdo
-            printf("\nnovapag.chave[0] = %d",novapag.chave[0]);  
             novapag.filho[0] = raiz;
-            printf("\nnovapag.filho[0] = %d",novapag.filho[0]);  
             novapag.filho[1] = filho_d_pro; //filho direito 
-            printf("\nnovapag.filho[1] = %d",novapag.filho[1]);  
             
             rrn = RRN_novapag();
             raiz = rrn; //faça RAIZ receber o RRN de NOVAPAG
+            novapag.contachaves++; // VAI TOMAR NO CU CARALHO, 26 gay !!!
             escreve_pagina(raiz,novapag);
             printf("\noi5");
         }
         imprimir_pag(Btree,raiz);
-        printf("\noi6");
+        //printf("\noi6");
         // fseek(Btree,sizeof(int),SEEK_CUR);
         // fread(&chave,sizeof(int),1,Btree);
         chave = pega_input(txt);
     }
-    fwrite(&raiz,sizeof(int),1,Btree);
-    printf("\nend gerencia");
+    atualiza_cabecalho(raiz,Btree);
+    //printf("\nend gerencia");
     fclose(Btree);
     fclose(txt);
 }  
 
 void criar_arvB(char *arq){
     FILE *Btree;
-    //FILE *txt = fopen(arq,"r+b");
-    //PAGINA novapag;
-   // int chave,raiz = 0;
     Btree = fopen("Btree.dat","w+b");
     gerenciador(Btree,arq);
-    printf("\nhello valentas");
     fclose(Btree);
 }
 
-/* void chaves_em_ordem_crescente(char *arq){
+void Printar_em_Ordem_cres (int rrn) {
+    if(rrn<0){
+        //printf("\n returnzada");
+        return;
+    }
+    PAGINA *pag;
+    le_pagina(rrn,pag);
+    //printf("\noi john 2");
+    for(int i=0;i<pag->contachaves;i++){
+        //printf("\noi john 3");
+        Printar_em_Ordem_cres(pag->filho[i]);
+        printf("%d |",pag->chave[i]);
+    }
+    //printf("\noi john 4");
+    Printar_em_Ordem_cres(pag->filho[pag->contachaves]);
+}
 
+void Ordem_das_chaves(){
+    FILE *Btree = fopen("Btree.dat","r");
+    int raiz;
+    if(Btree == NULL){
+        printf("\nO arquivo Btree.dat nao existe !!!");
+        exit(EXIT_FAILURE);
+    }
+    //printf("\noi john");
+    fseek(Btree,0,SEEK_SET);
+    fread(&raiz,sizeof(int),1,Btree);
+    //printf("\noi john 5");
+    Printar_em_Ordem_cres(raiz);
+}
+
+/* void emOrder(FILE *Btree, PAGINA* raiz){
+    if(raiz == NULL) return;
+    PAGINA pag;
+    if (raiz != NULL){
+        for(int i=0; i<raiz->contachaves; i++){
+            if(i==0){
+                int byteoffset = sizeof(int)+(raiz->filho[i]*sizeof(PAGINA));
+                fseek(Btree,byteoffset,SEEK_SET);
+                fread(&pag,sizeof(PAGINA),1,Btree);
+                emOrder(Btree, &pag);
+                printf(" %d ", raiz->chave[i]);
+            }
+
+            int byteoffset = sizeof(int)+(raiz->filho[i+1]*sizeof(PAGINA));
+            fseek(Btree,byteoffset,SEEK_SET);
+            fread(&pag,sizeof(PAGINA),1,Btree);
+            emOrder(Btree, &pag);
+        }
+    }
 } */
 
 int main(int argc, char *argv[]) {
@@ -381,19 +466,18 @@ int main(int argc, char *argv[]) {
 
         printf("Impressão das informações da árvore-B ...\n");
         imprime_informacao();
-        
-        
 
-    } else if (argc == 3 && strcmp(argv[1], "-k") == 0) {
+    } else if (argc == 2 && strcmp(argv[1], "-k") == 0) {
 
-        printf("impressão das chaves em ordem crescente (percurso na árvore-B) ...\n");
-        //chaves_em_ordem_crescente(argv[2]);
+        printf("impressão das chaves em ordem crescente (percurso na árvore-B) ! ...\n");
+        Ordem_das_chaves();
+        
     } else {
 
         fprintf(stderr, "Argumentos incorretos!\n");
         fprintf(stderr, "Modo de uso:\n");
-        fprintf(stderr, "$ %s (-c|-k) nome_arquivo\n", argv[0]);
-        fprintf(stderr, "$ %s -p\n", argv[0]);
+        fprintf(stderr, "$ %s -c nome_arquivo\n", argv[0]);
+        fprintf(stderr, "$ %s (-p|-k)\n", argv[0]);
         exit(EXIT_FAILURE);
 
     }
